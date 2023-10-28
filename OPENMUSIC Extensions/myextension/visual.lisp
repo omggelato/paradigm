@@ -1,0 +1,724 @@
+(in-package :om)
+
+(defun map-func (fn tree &key level-max) (t2l::map-func fn tree :level-max level-max))
+(defun map2func (fn tree1 tree2 &key level-max) (t2l::map2func fn tree1 tree2 :level-max level-max))
+(defun map3func (fn tree1 tree2 tree3 &key level-max)(t2l::map3func fn tree1 tree2 tree3 :level-max level-max))
+(defmethod! flatt (lst &optional level) :icon 235 (let ((flat nil)) (map-func #'(lambda (x) (push x flat)) lst :level-max level) (reverse flat)))
+(defmethod! findi (x list) (loop for j from 0 while (< j (length list)) do (if (equal (elt list j) x) (return j))))
+
+;;;; solver
+(defmethod! find-any (x &key force-function cost-fun terminate-test order)
+  (t2l::find-any2 x 
+                  :force-function force-function
+                  :cost-fun cost-fun
+                  :terminate-test terminate-test
+                  :order order))
+(defmethod! find-all (i form1 &key points-system catalog force-function cost-fun terminate-test order) 
+  (t2l::find-all2 i 
+                  form1
+                  :points-system points-system
+                  :catalog catalog 
+                  :force-function force-function
+                  :cost-fun cost-fun
+                  :terminate-test terminate-test
+                  :order order))
+(defmethod! solver-input (&optional input catalog) :icon 215 (t2l::solver-input input catalog))
+(defmethod! solver-output (&optional catalog) :icon 215 (t2l::solver-output catalog))
+
+;;;; assert!!
+(defmethod! assert!! (&rest xs) :icon 161 (apply #'t2l::assert!! xs))
+
+;;;; generators
+(defmethod! ?template (template &key map min max make-integer make-real)
+  :doc "Copies an aggregate object, replacing any symbol beginning with a question mark with a newly created variable. 
+
+If the same symbol appears more than once in x, only one variable is created for that symbol, the same variable replacing any occurrences of that symbol. Thus (template '(a b (?c d ?e) ?e)) has the same effect as: 
+            (LET ((?C (MAKE-VARIABLE))
+                  (?E (MAKE-VARIABLE)))
+              (LIST 'A 'B (LIST C 'D E) E)).
+
+This is useful for creating patterns to be unified with other structures. "
+  :icon 235
+  :numouts 2
+  (t2l::om-template template :map map :min min :max max :map map :make-integer make-integer :make-real make-real))
+(defmethod! make?variable (&optional name) (if name (screamer:make-variable name) (screamer:make-variable)))
+(defmethod! make?variables (list &key min max integers-mode floats-mode symbol-mode) :icon 215 :doc "" (t2l::make-screamer-variables list :min min :max max :integers-mode integers-mode :floats-mode floats-mode :symbol-mode symbol-mode))
+(defmethod! reset-solver-registry () :icon 340 (t2l::reset-solver-registry))
+(defmethod! ?a-number (&optional name) (if name (screamer:a-numberv name) (screamer:a-numberv)))
+(defmethod! ?a-real (&optional name) (if name (screamer:a-realv name) (screamer:a-realv)))
+(defmethod! ?a-real-above (low &optional name) (if name (screamer:a-real-abovev low name) (screamer:a-real-abovev low)))
+(defmethod! ?a-real-below (high &optional name) (if name (screamer:a-real-belowv high name) (screamer:a-real-belowv high)))
+(defmethod! ?a-real-between (low high &optional name) (if name (screamer:a-real-betweenv low high name) (screamer:a-real-betweenv low high)))
+(defmethod! ?an-integer (&optional name) (if name (screamer:an-integerv name) (screamer:an-integerv)))
+(defmethod! ?an-integer-above (low &optional name) (if name (screamer:an-integer-abovev low name) (screamer:an-integer-abovev low)))
+(defmethod! ?an-integer-below (high &optional name) (if name (screamer:an-integer-belowv high name) (screamer:an-integer-belowv high)))
+(defmethod! ?an-integer-between (low high &optional name) (if name (screamer:an-integer-betweenv low high name) (screamer:an-integer-betweenv low high)))
+(defmethod! ?a-memberof (sequence) (screamer:a-member-ofv sequence))
+(defmethod! ?variables-in (x) (screamer::variables-in x))
+
+
+;;;; rules
+(defmethod! ?integerp (x) (screamer:integerpv x))
+(defmethod! ?realp (x) (screamer:numberpv x))
+(defmethod! ?numberp (x) (screamer:numberpv x))
+(defmethod! ?booleanp (x) (screamer:booleanpv x))
+(defmethod! ?avg (&rest list) :icon 235 (apply #'t2l::omavgv list))
+(defmethod! ?and (&rest xs) :icon 218 (apply #'t2l::omandv xs))
+(defmethod! ?or (&rest xs) :icon 219 (apply #'t2l::omorv xs))
+(defmethod! ?not (x) (t2l::omnotv x))
+(defmethod! ?abs (k) (t2l::absv k))
+(defmethod! ?% (n d) :icon 196 (t2l::%v n d))
+(defmethod! ?+ (&rest xs) :icon 193 (apply #'t2l::om+v xs))
+(defmethod! ?- (x &rest xs) :icon 194 (apply #'t2l::om-v (append (list x) xs)))
+(defmethod! ?* (&rest xs) :icon 195 (apply #'t2l::om*v xs))
+(defmethod! ?/ (&rest xs) :icon 196 (apply #'t2l::om/v xs))
+(defmethod! ?1+ (x) :icon 193 (t2l::om+v 1 x))
+(defmethod! ?-1 (x) :icon 194 (t2l::om-v x 1))
+(defmethod! ?< (x y &rest xs) :icon 255 (apply #'t2l::om<v (append (list x y) xs)))
+(defmethod! ?> (x y &rest xs) :icon 256 (apply #'t2l::om>v (append (list x y) xs)))
+(defmethod! ?<= (x y &rest xs) :icon 257 (apply #'t2l::om<=v (append (list x y) xs)))
+(defmethod! ?>= (x y &rest xs) :icon 258 (apply #'t2l::om>=v (append (list x y) xs)))
+(defmethod! ?= (x y &rest xs) :icon 259 (apply #'t2l::om=v (append (list x y) xs)))
+(defmethod! ?/= (x y &rest xs) :icon 260 (apply #'t2l::om/=v (append (list x y) xs)))
+(defmethod! ?equal (x y) :icon 259 (t2l::omequalv x y))
+(defmethod! ?between (x min max) 
+  :icon 235 
+  (apply 
+   #'?and 
+   (map-func 
+    #'(lambda (y)
+        (or (null y)
+            (?and (or (null min) 
+                      (?>= y min)) 
+                  (or (null max) 
+                      (?<= y max)))))
+    (if (listp x) x (list x)))))
+(defmethod! ?max (&rest xs) :icon 209 (apply #'t2l::ommaxv xs))
+(defmethod! ?min (&rest xs) :icon 209 (apply #'t2l::omminv xs))
+(defmethod! ?mapprules (input
+                        prules 
+                        &key symbol-mode
+                             get-symbol-list
+                             ; process-chunk-size
+                             ; input-process-increment
+                             ; continue
+                             ; init
+                             listdxx
+                             max
+                             min
+                             ordered-partitions-nondeterministic-values-cap
+                             superset
+                             params
+                             print-graph-info)
+  :numouts 3
+  :doc "Applies symbol-grammars to screamer variables. With the forward-chaining inferencing engine in screamer (ONE-VALUES, ALL-VALUES, SOLUTION), all possible expressions of a given symbol-grammar that apply to a list of values can be explored. The code is based on the process outlined in 'Graph representation of context-free grammars', Alex Shkotin (arXiv:cs/0703015 http://arxiv.org/abs/cs/0703015) (jan 2013)"
+  (multiple-value-bind 
+      (var list dmg)
+      (t2l::mapprules input
+                      prules
+                      ; :process-chunk-size process-chunk-size
+                      :get-symbol-list get-symbol-list
+                      ; :input-process-increment input-process-increment
+                      ; :continue continue
+                      ; :init init
+                      :listdxx listdxx
+                      :max max
+                      :min min
+                      ; :ordered-partitions-nondeterministic-values-cap ordered-partitions-nondeterministic-values-cap
+                      :superset superset
+                      :symbol-mode symbol-mode
+                      :params params
+                      :print-graph-info print-graph-info)
+    (values var list dmg)))
+
+(defmethod! map?and (fn list)
+  :icon 147
+  (cond 
+   ((null list) T)
+   (t
+    (apply #'?and
+           (mapcar fn list)))))
+(defmethod! map2?and (fn list1 list2)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        (t
+         (apply #'?and
+                (mapcar fn list1 list2)))))
+(defmethod! map3?and (fn list1 list2 list3)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        (t
+         (apply #'?and
+                (mapcar fn list1 list2 list3)))))
+(defmethod! map4?and (fn list1 list2 list3 list4)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        ((null list4) T)
+        (t
+         (apply #'?and
+                (mapcar fn list1 list2 list3 list4)))))
+(defmethod! map5?and (fn list1 list2 list3 list4 list5)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        ((null list4) T)
+        ((null list5) T)
+        (t
+         (apply #'?and
+                (mapcar fn list1 list2 list3 list4 list5)))))
+(defmethod! map?or (fn list)
+  :icon 147
+  (cond ((null list) T)
+        (t
+         (apply #'?or
+                (mapcar fn list)))))
+(defmethod! map2?or (fn list1 list2)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        (t
+         (apply #'?or
+                (mapcar fn list1 list2)))))
+(defmethod! map3?or (fn list1 list2 list3)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        (t
+         (apply #'?or
+                (mapcar fn list1 list2 list3)))))
+(defmethod! map4?or (fn list1 list2 list3 list4)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        ((null list4) T)
+        (t
+         (apply #'?or
+                (mapcar fn list1 list2 list3 list4)))))
+(defmethod! map5?or (fn list1 list2 list3 list4 list5)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        ((null list4) T)
+        ((null list5) T)
+        (t
+         (apply #'?or
+                (mapcar fn list1 list2 list3 list4 list5)))))
+(defmethod! maplist?and (fn list)
+  :icon 147
+  (cond ((null list) T)
+        ;((> (length list) 2048)
+        ; (reduce #'omandv
+        ;         (maplist fn list)))
+        (t
+         (apply #'?and
+                (maplist fn list)))))
+(defmethod! maplist2?and (fn list1 list2)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        (t
+         (apply #'?and
+                (maplist fn list1 list2)))))
+(defmethod! maplist3?and (fn list1 list2 list3)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        (t
+         (apply #'?and
+                (maplist fn list1 list2 list3)))))
+(defmethod! maplist?or (fn list)
+  :icon 147
+  (cond ((null list) T)
+        (t
+         (apply #'?or
+                (maplist fn list)))))
+(defmethod! maplist2?or (fn list1 list2)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        (t
+         (apply #'?or
+                (maplist fn list1 list2)))))
+(defmethod! maplist3?or (fn list1 list2 list3)
+  :icon 147
+  (cond ((null list1) T)
+        ((null list2) T)
+        ((null list3) T)
+        (t
+         (apply #'?or
+                (maplist fn list1 list2 list3)))))
+(defmethod! ?listdx (list) :icon 235 (t2l::listdxv list))
+(defun listXv (fn xs value) (map-func #'(lambda (x) (if x (funcall fn x value) nil)) xs))
+(defmethod! ?list+ (xs value) :icon 193 (listXv #'?+ xs value))
+(defmethod! ?list- (xs value) :icon 194 (listXv #'?- xs value))
+(defmethod! ?list* (xs value) :icon 195 (listXv #'?* xs value))
+(defmethod! ?list/ (xs value) :icon 196 (listXv #'?/ xs value))
+(defmethod! ?list% (xs value) :icon 196 (listXv #'?% xs value))
+(defmethod! ?listmin (xs) :icon 235 (apply #'?min xs))
+(defmethod! ?listmax (xs) :icon 235 (apply #'?max xs))
+(defmethod! ?listdx (list) 
+  :icon 235
+  (cond ((null list) nil)
+        ((cdr list)
+         (append (if (or (null (car list))
+                         (null (cadr list)))
+                     (list nil)
+                   (list (?- (cadr list) (car list))))
+                 (?listdx (cdr list))))
+        (T nil)))
+(defmethod! ?list< (xs value) :icon 255 (map?and #'(lambda (x) (?< x value)) (flat xs)))
+(defmethod! ?list<= (xs value) :icon 257 (map?and #'(lambda (x) (?<= x value)) (flat xs)))
+(defmethod! ?list> (xs value) :icon 256 (map?and #'(lambda (x) (?> x value)) (flat xs)))
+(defmethod! ?list>= (xs value) :icon 258 (map?and #'(lambda (x) (?>= x value)) (flat xs)))
+(defmethod! ?list= (xs value) :icon 259 (map?and #'(lambda (x) (?= x value)) (flat xs)))
+(defmethod! ?list/= (xs value) :icon 260 (map?and #'(lambda (x) (?/= x value)) (flat xs)))
+(defmethod! ?listeq (xs value) :icon 259 (map?and #'(lambda (x) (?equal x value)) (flat xs)))
+(defmethod! ?list!eq (xs value) :icon 260 (map?and #'(lambda (x) (?not (equal x value))) (flat xs)))
+(defmethod! ?all+ (xs) :icon 193 (apply #'t2l::om+v (remove nil (flat xs))))
+(defmethod! ?all- (xs) :icon 194 (apply #'t2l::om-v (remove nil (flat xs))))
+(defmethod! ?all* (xs) :icon 195 (apply #'t2l::om*v (remove nil (flat xs))))
+(defmethod! ?all/ (xs) :icon 196 (apply #'t2l::om/v (remove nil (flat xs))))
+(defmethod! ?all< (xs) :icon 255 (apply #'t2l::om<v (remove nil (flat xs))))
+(defmethod! ?all<= (xs) :icon 257 (apply #'t2l::om<=v (remove nil (flat xs))))
+(defmethod! ?all> (xs) :icon 256 (apply #'t2l::om>v (remove nil (flat xs))))
+(defmethod! ?all>= (xs) :icon 258 (apply #'t2l::om>=v (remove nil (flat xs))))
+(defmethod! ?all/= (xs) :icon 260 (apply #'t2l::om/=v xs))
+(defmethod! ?all-different (x &rest xs)
+  :icon 260
+  (labels ((all-different (x xs)
+             (if (null xs)
+                 t
+               (?and (?not (?= x (car xs)))
+                     (?all-different x (cdr xs))
+                     (?all-different (car xs) (cdr xs))))))
+    (all-different x xs)))
+(defmethod! ?all-equal (xs) :icon 260 (map?and #'(lambda (ys) (screamer:equalv (car ys) (cadr ys))) (combinations-of2 xs)))
+(defmethod! ?all/equal (xs) :icon 260 (map?and #'(lambda (ys) (screamer:notv (screamer:equalv (car ys) (cadr ys)))) xs))
+(defmethod! ?all-between (x min max)
+  :icon 235
+  (let ((flat (remove-duplicates (remove nil (flat (list x))))))
+    (?and (apply #'?and (mapcar #'(lambda (y) (?>= y min)) flat))
+          (apply #'?and (mapcar #'(lambda (y) (?<= y max)) flat)))))
+(defmethod! ?member (x sequence) (t2l::ommemberv x sequence))
+(defmethod! ?membersof (list sequence)
+  :icon 235
+  (map?and #'(lambda (x) (?member x sequence)) (flatt list)))
+(defmethod! !membersof (list sequence)
+  :icon 235
+  (map?and #'(lambda (x) (?not (?member x sequence))) (flatt list)))
+(defmethod! ?items-in (list sequence &key numeric fast-crosscheck)
+  :icon 235
+  (labels
+      ((all-members-of (xs)
+         (cond ((null xs) nil)
+               ((not (listp xs))
+                (all-members-of (list xs)))
+               ((cdr xs)
+                (?and
+                 (all-members-of (list (car xs)))
+                 (all-members-of (cdr xs))))
+               (fast-crosscheck (fmemberof (car xs) sequence))
+               (numeric (fmemberof (car xs) sequence))
+               (T (?member (car xs) sequence))))
+       (fmemberof (x ys)
+         (cond ((null ys) nil)
+               ((cdr ys)
+                (?or
+                 (fmemberof x (list (car ys)))
+                 (fmemberof x (cdr ys))))
+               (numeric 
+                (cond ((null x) 
+                       (null (car ys)))
+                      ((null (car ys))
+                       (null x))
+                      (T 
+                       (?= x (car ys)))))
+               (T (?equal x (car ys))))))
+    (all-members-of list)))
+
+(defmethod! ?items-in (list sequence &key numeric fast-crosscheck)
+  :icon 235
+  (labels
+      ((all-members-of (xs)
+         (cond ((null xs) nil)
+               ((not (listp xs))
+                (all-members-of (list xs)))
+               ((or fast-crosscheck 
+                    numeric) (map?and #'iimemberof xs))
+               (T (?membersof xs sequence))))
+       (iimemberof (x)
+         (cond ((and numeric (null x)) nil)
+               (numeric (map?or #'(lambda (y) (?= x y)) sequence))
+               (T (map?or #'(lambda (y) (?equal x y)) sequence)))))
+    (all-members-of list)))
+
+(defmethod! ?items!in (list sequence &key fast-crosscheck numeric)
+  :icon 235
+  (labels
+      ((all!members-of (xs)
+         (cond ((null xs) nil)
+               ((not (listp xs))
+                (all!members-of (list xs)))
+               ((cdr xs)
+                (?and
+                 (all!members-of (list (car xs)))
+                 (all!members-of (cdr xs))))
+               (fast-crosscheck (f!memberof (car xs) sequence))
+               (numeric (f!memberof (car xs) sequence))
+               (T (?not (?member (car xs) sequence)))))
+       (f!memberof (x ys)
+         (cond ((null ys) nil)
+               ((cdr ys)
+                (?and
+                 (f!memberof x (list (car ys)))
+                 (f!memberof x (cdr ys))))
+               (numeric 
+                (cond ((null x) 
+                       (not (null (car ys))))
+                      ((null (car ys))
+                       (not (null x)))
+                      (T 
+                       (?/= x (car ys)))))
+               (T (?not (?equal x (car ys)))))))
+    (all!members-of list)))
+
+(defmethod! ?items!in (list sequence &key numeric fast-crosscheck)
+  :icon 235
+  (labels
+      ((all-members-of (xs)
+         (cond ((null xs) nil)
+               ((not (listp xs))
+                (all-members-of (list xs)))
+               ((or fast-crosscheck 
+                    numeric) (map?and #'ii!memberof xs))
+               (T (!membersof xs sequence))))
+       (ii!memberof (x)
+         (cond ((and numeric (null x)) nil)
+               (numeric (map?and #'(lambda (y) (?/= x y)) sequence))
+               (T (map?and #'(lambda (y) (?not (?equal x y))) sequence)))))
+    (all-members-of list)))
+
+(defmethod! ?integers-in (list sequence) ; delete
+  :icon 235
+  (labels
+      ((all-members-of (xs sequence)
+         (cond ((null xs) T)
+               ((cdr xs)
+                (?and
+                 (all-members-of (list (car xs)) sequence)
+                 (all-members-of (cdr xs) sequence)))
+               (T (t2l::member-of-number-sequencev (car xs) sequence)))))
+    (cond ((null list) (some #'null sequence))
+          ((null sequence) nil)
+          ((and (some #'null list)
+                (some #'null sequence))
+           (all-members-of (remove nil list)
+                           (remove nil sequence)))
+          ((some #'null list) nil)
+          ((some #'null sequence)
+           (all-members-of list
+                           (remove nil sequence)))
+          (t
+           (all-members-of list sequence)))))
+
+(defmethod! ?integers!in (list sequence)
+  :icon 235
+  (labels
+      ((all-not-members-of (xs sequence)
+         (cond ((null xs) T)
+               ((cdr xs)
+                (?and
+                 (all-not-members-of (list (car xs)) sequence)
+                 (all-not-members-of (cdr xs) sequence)))
+               (T (t2l::not-member-of-number-sequencev (car xs) sequence)))))
+    (cond ((null list) nil)
+          ((null sequence) nil)
+          ((and (some #'null list)
+                (some #'null sequence))
+           (all-not-members-of (remove nil list)
+                           (remove nil sequence)))
+          ((some #'null list) nil)
+          ((some #'null sequence)
+           (all-not-members-of list
+                               (remove nil sequence)))
+          (t
+           (all-not-members-of list sequence)))))
+
+(defmethod! ?floor (x) (t2l::floorv x))
+;(defmethod! ?ceiling (x) (t2l::ceilingv x))
+(defmethod! ?expt (a b) (t2l::exptv a b))
+
+(defmethod! fuseseqc (midi-number-sequence midi-number-sequence-2) :icon 230 
+  (labels
+      ((atom? (x) (or (null x) (not (listp x))))
+       (promote-atom (x) (if (atom? x) (list x)))
+       (promote-atoms (xs) (if (atom? xs) (list xs) xs))
+       (demote-list (x) (cond ((atom? x) x) ((= 1 (length x)) (car x)) (T x)))
+       (as-sequence-list (xs) 
+         (cond ((some #'(lambda (x) 
+                          (or (atom? x) 
+                              (and (listp x) 
+                                   (= 1 (length x))))) xs) 
+                (list xs))
+               (T (mat-trans xs)))))
+    (cond ((null midi-number-sequence) midi-number-sequence-2) ((null midi-number-sequence-2) midi-number-sequence)
+          (T 
+           (assert (= (length midi-number-sequence) (length midi-number-sequence-2)))
+           (let ((list1 (as-sequence-list midi-number-sequence))
+                 (list2 (as-sequence-list midi-number-sequence-2)))
+             (mat-trans (append list1 list2)))))))
+(defmethod! mergeseqc (midi-number-sequence midi-number-sequence-2) :icon 231 (append midi-number-sequence midi-number-sequence-2))
+(defmethod! mergevoiceup (voices new-voice) :icon 231 (append voices (list new-voice)))
+(defmethod! mergevoicedown (new-voice voices) :icon 231 (append (list new-voice) voices))
+(defmethod! ?funcall (fn &rest x) :icon 147 (apply #'screamer:funcallv (append (list fn) x)))
+(defmethod! ?apply (fn x &rest xs) :icon 147 (apply #'screamer:applyv (append (list fn x) xs)))
+(defmethod! ?counttrues (&rest xs) :icon 235 (apply #'screamer:count-truesv (if (listp xs) (flatt xs) (list xs))))
+(defmethod! ?countof (x list &key numeric) :icon 235 (apply #'screamer:count-truesv (mapcar #'(lambda (y) (if numeric (?= x y) (?equal x y))) list)))
+(defmethod! symxlat (x map) :icon 147 (t2l::symxlat x map))
+(defmethod! ?symxlat (x map &optional function-input use-backward-chaining) :icon 147 (cond (function-input (t2l::?symxlat-in-function-mode x map function-input use-backward-chaining)) (T (?symxlat-internal x map))))
+(defun ?symxlat-internal (x map)
+  (cond
+   ((null x) (some #'null (mapcar #'car map)))
+   ((listp x)
+    (map-func #'(lambda (y) (?symxlat-internal y map)) x))
+   (T
+    (let ((y (make?variable)))
+      (screamer:assert! (screamer:memberv x (mapcar #'car map)))
+      (screamer:assert! (screamer:memberv y (mapcar #'cadr map)))
+      (screamer:assert! (screamer:equalv y
+                       (screamer:funcallv
+                        #'(lambda (z) 
+                            (cadr (assoc z map))) x)))
+    y))))
+(defmethod! ?xlatsym (x map) :icon 147 (?symxlat x (mapcar #'reverse map)))
+
+(defmethod! next-solver-input (&optional catalog)
+  :icon 215
+  (let ((catalog (or catalog :backup)))
+    (cond
+     ((null (find catalog (mapcar #'car t2l::*backup-solver-input*))) nil)
+     ((null (cdr (assoc catalog t2l::*backup-solver-input*))) nil)
+     (T
+      (let ((next (car (cdr (assoc catalog t2l::*backup-solver-input*)))))
+        (rplacd (assoc catalog t2l::*backup-solver-input*)
+                (cdr (cdr (assoc catalog t2l::*backup-solver-input*))))
+        next)))))
+
+(defmethod! next-solver-output (&optional catalog) :icon 215 (t2l::next-solver-output catalog))
+
+
+
+
+
+
+
+;;;; misc
+(defmethod! list-depth (list)
+  :icon 235
+  (let ((depth 0))
+    (labels
+        ((list-depth-internal (tree level)
+           (cond ((null tree) nil)
+                 ((not (consp tree)) (if (> level depth)
+                                         (setf depth level)))
+                 ((consp (car tree))
+                  (list-depth-internal (car tree) (1+ level))
+                  (list-depth-internal (cdr tree) level))
+                 (t
+                  (if (> level depth) (setf depth level))
+                  (list-depth-internal (cdr tree) level)))))
+      (list-depth-internal list 0)
+      depth)))
+
+(defmethod! flatten-seqc (list &optional enable-suspensions)
+  :icon 235
+  (let ((r (let* ((ll (map-func #'(lambda (x)
+                                       (cond ((null x) "nil")
+                                             (t x)))
+                                   list)))
+             (labels 
+                 ((prcs-sublist (x) 
+                    (cond ((contains-list x) 
+                           (match-sublist-lens (atoms2list x)
+                                               (find-largest-sublist-len (atoms2list x))
+                                               (not enable-suspensions)))
+                          (t (mapcar 'list x))))
+
+                  (contains-list (ll)
+                    (cond ((null ll) nil)
+                          ((listp ll) (or (listp (car ll))
+                                          (contains-list (cdr ll))))
+                          (t nil)))
+                  
+                  (convert-mnlist-repeats (mnl)
+                    (reverse (convert-mnlist-repeats-rec (reverse mnl))))
+
+                  (convert-mnlist-repeats-rec (mnl)
+                    (cond ((null mnl) nil)
+                          ((cdr mnl) (append (list (cond ((equalp (car mnl) (cadr mnl)) 
+                                                          (om* (car mnl) 1.0))
+                                                         (t (car mnl))))
+                                             (convert-mnlist-repeats-rec (cdr mnl))))
+                          (t (list (car mnl)))))
+                  
+                      (flatn (x)
+                        (cond ((null x) nil)
+                              (t (append (car x) (flatn (cdr x))))))
+
+                      (find-largest-sublist-len (x) 
+                        (cond ((null (car x)) 0)
+                              ((listp (car x)) (max (length (car x)) 
+                                                    (find-largest-sublist-len (cdr x))))
+                              ((atom (car x)) (max 1 
+                                                   (find-largest-sublist-len (cdr x))))
+                              (t 0)))
+
+                      (match-sublist-lens (x len &optional ignore-midi-ties) 
+                        (cond ((null (car x)) nil)
+                              ((< (length (car x)) len) 
+                               (append (list (append (car x)
+                                                     (make-sequence 'list
+                                                                    (- len (length (car x)))
+                                                                    :initial-element (if ignore-midi-ties 
+                                                                                         (car (reverse (flat (car x))))
+                                                                                       (car (reverse (flat (car x))))))))
+                                       (match-sublist-lens (cdr x) len ignore-midi-ties)))
+                              (t (append (list (car x)) (match-sublist-lens (cdr x) len ignore-midi-ties)))))
+                      
+                      (atoms2list (x) 
+                        (cond ((null (car x)) nil)
+                              ((listp (car x)) (append (list (car x)) (atoms2list (cdr x))))
+                              ((atom (car x)) (append (list (list (car x))) (atoms2list (cdr x))))
+                              (t nil)))
+                      
+                      ) ; end of functions
+               (let ((flat (mapcar #'flatn
+                                   (mat-trans (let ((a 
+                                                     (mapcar #'(lambda (x) 
+                                                                 
+                                                                 (cond ((contains-list (flat x 1)) 
+                                                                        (flatten-seqc x enable-suspensions))
+                                                                       (t (prcs-sublist x))))
+                                                             (mat-trans (prcs-sublist ll)))))
+                                                a)))))
+                 (if enable-suspensions           
+                     (mapcar 'convert-mnlist-repeats flat)
+                   flat))))))
+    (map-func #'(lambda (x)
+                     (cond ((and (stringp x)
+                                 (string= x "nil"))
+                            nil)
+                           (t x)))
+                 r)))
+
+(defun flat1 (list)
+  (cond ((null list) nil)
+        ((and (listp list)
+              (every #'listp list))
+         (apply #'append list))
+        ((listp list)
+         (flat1 (mapcar #'(lambda (x) (cond ((listp x) x)
+                                            (t (list x))))
+                        list)))
+        (t list)))
+
+(defmethod! last-item (list)
+  :icon 235
+  (cond ((null list) nil)
+        ((not (listp list)) list)
+        (t
+         (car (reverse list)))))
+
+(defun combinations-of2 (xs) ; delete
+  (let ((stack nil))
+    (labels
+        ((internal (xs)
+           (cond ((null xs) nil)
+                 ((cdr xs)
+                  (mapcar #'(lambda (y)
+                              (push (list (car xs) y)
+                                    stack))
+                          (cdr xs))
+                  (internal (cdr xs)))
+                 (t t))))
+      (internal xs)
+      (reverse stack))))
+
+(defmethod! group-by-motion-type (voice1 voice2 &key mode)
+  :icon 235
+  (t2l::group-by-motion-type voice1 voice2 :mode mode))
+
+(defmethod! alleq (list &key test)
+  :icon 235
+  (every #'(lambda (xs) (funcall (or test #'equal) (car xs) (cadr xs)))
+         (t2l::combinations-of2 list)))
+
+(defmethod! ?alleq (list)
+  :icon 235
+  (map?and #'(lambda (xs) (?equal (car xs) (cadr xs)))
+           (t2l::combinations-of2 list)))
+
+(defmethod! ?all!eq (list) :icon 235 (?alldifferent list))
+(defmethod! ?alldifferent (list)
+  :icon 235
+  (map?and #'(lambda (xs) (?not (?equal (car xs) (cadr xs))))
+           (t2l::combinations-of2 list)))
+
+(defmethod! write-textfile (input label ext &optional timezone) (write-textfile input label ext timezone))
+
+(defmethod! cartx2 (xs) :icon 235 (t2l::cartx2 xs))
+
+(defmethod! nsucc (input n &key step list-padding pad-character exhaust-list) :icon 235 (t2l::nsucc input n :step step :list-padding list-padding :pad-character pad-character :exhaust-list exhaust-list))
+
+(defmethod! remove-successive-duplicates (list &key test) :icon 235 (t2l::remove-successive-duplicates list :test test))
+
+(defmethod! list-excerpt (list percent &optional items)
+  :icon 235
+  (cond 
+   ((null list) list)
+   ((= (length list) 1) list)
+   (t
+    (let* ((start-index (min 
+                         (round (float (* (float (/ (min (abs percent)) 100.0))
+                                          (length list))))
+                         (1- (length list))))
+           (end-index (if items                         
+                          (min (length list) (+ start-index items))
+                        (length list))))
+      (subseq list start-index end-index)))))
+
+(defmethod! has-null-values (list)
+  :icon 235
+  (cond ((null list) t)
+        ((atom list) nil)
+        ((some #'null (flat list)) t)
+        (t nil)))
+
+(defmethod! list-excerpt (list percent &optional items)
+  :icon 235
+  (cond 
+   ((null list) list)
+   ((= (length list) 1) list)
+   (t
+    (let* ((start-index (min 
+                         (round (float (* (float (/ (min (abs percent)) 100.0))
+                                          (length list))))
+                         (1- (length list))))
+           (end-index (if items                         
+                          (min (length list) (+ start-index items))
+                        (length list))))
+      (subseq list start-index end-index)))))
+
+(defmethod! alert2 (input &key label print-label-only) :icon 129 (t2l::alert2 input :label label :print-label-only print-label-only))
+(defmethod! print-warnings (&optional x) :icon 129 (t2l::print-warnings x))
+(defmethod! hide-warnings () :icon 129 (t2l::hide-warnings))
